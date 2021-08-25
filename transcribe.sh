@@ -121,7 +121,7 @@ done
 aws transcribe get-transcription-job --transcription-job-name test-job001 1> tmp.json
 sed -e "s/FileUri\":\ /FileUri\":\ \n/" tmp.json |grep https |sed -e "s/\"//g" > tmp-url.txt
 rm -f asrOutput.json*; wget -q -i tmp-url.txt
-mv asrOutput.json* "$OUTPUT_NAME".json
+mv -f asrOutput.json* "$OUTPUT_NAME".json
 rm -f tmp.json tmp-url.txt
 
 
