@@ -74,7 +74,13 @@ fi
 TRANSCRIBE_DIR="$(cd "$(dirname "$0")"; pwd)"
 
 
-ffmpeg -loglevel error -y -i "$INPUT_FILE" -vn -acodec copy transcripts-tmp.mp4
+ffmpeg -loglevel error -y -i "$INPUT_FILE" -vn -acodec copy transcripts-tmp.mp4 2> tmp.txt
+if [ -s tmp.txt ]; then
+        cat tmp.txt
+        rm -f tmp.txt transcripts-tmp.mp4
+        exit
+fi
+rm -f tmp.txt
 
 
 aws s3api create-bucket --bucket "$BUCKET_NAME" --region "$REGION" --create-bucket-configuration LocationConstraint="$REGION" 2> tmp.txt
