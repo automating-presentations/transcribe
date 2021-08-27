@@ -133,7 +133,7 @@ rm -f tmp.json tmp-url.txt
 
 python3 "$TRANSCRIBE_DIR"/lib/extraction.py "$OUTPUT_NAME".json
 sed -e "s/\[{'transcript'://" -e "s/\}\]//" tmp-asr-output.txt > tmp-asr-output.txte
-if [ "$LANGUAGE_CODE" == "ja-JP" -o "$LANGUAGE_CODE" == "cmn-CN" ]; then
+if [ "$LANGUAGE_CODE" == "ja-JP" -o "$LANGUAGE_CODE" == "zh-CN" ]; then
 	sed -e "s/。/。\n\n/g" tmp-asr-output.txte > "$OUTPUT_NAME".txt
 else
 	sed -e "s/\.\ /\.\n\n/g" tmp-asr-output.txte > "$OUTPUT_NAME".txt
