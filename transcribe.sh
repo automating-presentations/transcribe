@@ -29,7 +29,7 @@ print_usage ()
 	echo "	$(basename $0) [option] -i <sound or movie file> -bucket <bucket name> -o <output file name>"
 	echo "Options:"
 	echo "	-h, --help			print this message."
-	echo "	-lang				specify the language code. (default language code is \"ja-JP\")"
+	echo "	-lang <language code>		specify the language code. (default language code is \"ja-JP\")"
 	echo ""
 	echo "Example1: The following command transcribes Japanese sound or movie file and creates \"test-output.{json,txt}\"."
 	echo "	This S3 Bucket, \"testid-bucket00001\", is created temporarily for the purpose of transcribe, and deleted after transcribe."
