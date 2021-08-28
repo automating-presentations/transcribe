@@ -108,7 +108,15 @@ cat << EOF  > test-start-command.json
 EOF
 aws transcribe start-transcription-job \
      --region "$REGION" \
-     --cli-input-json file://test-start-command.json
+     --cli-input-json file://test-start-command.json 2> tmp.txt
+if [ -s tmp.txt ]; then
+        cat tmp.txt
+	rm -f tmp.txt test-start-command.json
+	aws s3api delete-object --bucket "$BUCKET_NAME" --key transcripts-tmp.mp4
+	aws s3 rb s3://"$BUCKET_NAME"
+        exit
+fi
+rm -f tmp.txt
 echo "Now transcribing..."
 
 
