@@ -28,7 +28,8 @@ chmod u+x transcribe/transcribe.sh
 ./transcribe/transcribe.sh -i input-ja.mp3 -bucket testid-bucket00001 -o test-output
 ```
 
-The following command transcribes English sound or movie file and creates "test-output.{json,txt}".
+The following command transcribes English sound or movie file and creates "test-output.{json,txt}".  
+Please refer to [here](https://docs.aws.amazon.com/transcribe/latest/dg/API_TranscriptionJobSummary.html) for the language codes that can be specified.
 
 ```
 ./transcribe/transcribe.sh -lang en-US -i input-en.mp4 -bucket testid-bucket00001 -o test-output
