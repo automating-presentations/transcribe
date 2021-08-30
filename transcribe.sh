@@ -56,6 +56,8 @@ do
 		OUTPUT_FLAG=1; shift; OUTPUT_NAME="$1"; shift
 	elif [ "$1" == "-lang"  ]; then
 		shift; LANGUAGE_CODE="$1"; shift
+	else
+		shift
 	fi
 done
 if [ $INPUT_FLAG -eq 0 ]; then
@@ -74,82 +76,86 @@ fi
 TRANSCRIBE_DIR="$(cd "$(dirname "$0")"; pwd)"
 
 
-ffmpeg -loglevel error -y -i "$INPUT_FILE" -vn -acodec copy transcripts-tmp.mp4 2> tmp.txt
-if [ -s tmp.txt ]; then
-        cat tmp.txt
-        rm -f tmp.txt transcripts-tmp.mp4
+RANDOM_STRING=$(cat /dev/urandom |base64 |tr -cd "a-zA-Z0-9" |fold -w 32 |head -n 1)
+
+
+ffmpeg -loglevel error -y -i "$INPUT_FILE" -vn -acodec copy transcripts-tmp-$RANDOM_STRING.mp4 2> tmp-$RANDOM_STRING.txt
+if [ -s tmp-$RANDOM_STRING.txt ]; then
+        cat tmp-$RANDOM_STRING.txt
+        rm -f tmp-$RANDOM_STRING.txt transcripts-tmp-$RANDOM_STRING.mp4
         exit
 fi
-rm -f tmp.txt
+rm -f tmp-$RANDOM_STRING.txt
 
 
-aws s3api create-bucket --bucket "$BUCKET_NAME" --region "$REGION" --create-bucket-configuration LocationConstraint="$REGION" 2> tmp.txt
-if [ -s tmp.txt ]; then
-	cat tmp.txt
-	rm -f tmp.txt transcripts-tmp.mp4
+aws s3api create-bucket --bucket "$BUCKET_NAME" --region "$REGION" --create-bucket-configuration LocationConstraint="$REGION" 2> tmp-$RANDOM_STRING.txt
+if [ -s tmp-$RANDOM_STRING.txt ]; then
+	cat tmp-$RANDOM_STRING.txt
+	rm -f tmp-$RANDOM_STRING.txt transcripts-tmp-$RANDOM_STRING.mp4
 	exit
 fi
+rm -f tmp-$RANDOM_STRING.txt
 
 
 aws s3api put-public-access-block --bucket "$BUCKET_NAME" --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
-aws s3 cp transcripts-tmp.mp4 s3://"$BUCKET_NAME"/ --acl private
-rm -f tmp.txt transcripts-tmp.mp4
+aws s3 cp transcripts-tmp-$RANDOM_STRING.mp4 s3://"$BUCKET_NAME"/ --acl private
+rm -f transcripts-tmp-$RANDOM_STRING.mp4
 
 
-cat << EOF  > test-start-command.json
+cat << EOF  > test-start-command-$RANDOM_STRING.json
 {
-    "TranscriptionJobName": "test-job001", 
+    "TranscriptionJobName": "test-job-$RANDOM_STRING", 
     "LanguageCode": "$LANGUAGE_CODE", 
     "MediaFormat": "mp4", 
     "Media": {
-        "MediaFileUri": "s3://$BUCKET_NAME/transcripts-tmp.mp4"
+        "MediaFileUri": "s3://$BUCKET_NAME/transcripts-tmp-$RANDOM_STRING.mp4"
     }
 }
 EOF
 aws transcribe start-transcription-job \
      --region "$REGION" \
-     --cli-input-json file://test-start-command.json 2> tmp.txt
-if [ -s tmp.txt ]; then
-        cat tmp.txt
-	rm -f tmp.txt test-start-command.json
-	aws s3api delete-object --bucket "$BUCKET_NAME" --key transcripts-tmp.mp4
+     --cli-input-json file://test-start-command-$RANDOM_STRING.json 2> tmp-$RANDOM_STRING.txt
+if [ -s tmp-$RANDOM_STRING.txt ]; then
+        cat tmp-$RANDOM_STRING.txt
+	rm -f tmp-$RANDOM_STRING.txt test-start-command-$RANDOM_STRING.json
+	aws s3api delete-object --bucket "$BUCKET_NAME" --key transcripts-tmp-$RANDOM_STRING.mp4
 	aws s3 rb s3://"$BUCKET_NAME"
         exit
 fi
-rm -f tmp.txt
+rm -f tmp-$RANDOM_STRING.txt
 echo "Now transcribing..."
 
 
 while :
 do
 	sleep 10
-	aws transcribe list-transcription-jobs --region "$REGION" |grep COMPLETED > completed-flag-check.txt
-	if [ -s completed-flag-check.txt ]; then
+	aws transcribe list-transcription-jobs --region "$REGION" |grep COMPLETED > completed-flag-check-$RANDOM_STRING.txt
+	if [ -s completed-flag-check-$RANDOM_STRING.txt ]; then
 		echo "Transcribing completed!"
-		rm -f completed-flag-check.txt test-start-command.json
+		rm -f completed-flag-check-$RANDOM_STRING.txt test-start-command-$RANDOM_STRING.json
 		break
 	fi
 done
 
 
-aws transcribe get-transcription-job --transcription-job-name test-job001 1> tmp.json
-sed -e "s/FileUri\":\ /FileUri\":\ \n/" tmp.json |grep https |sed -e "s/\"//g" > tmp-url.txt
-rm -f asrOutput.json*; wget -q -i tmp-url.txt
+aws transcribe get-transcription-job --transcription-job-name test-job-$RANDOM_STRING 1> tmp-$RANDOM_STRING.json
+sed -e "s/FileUri\":\ /FileUri\":\ \n/" tmp-$RANDOM_STRING.json |grep https |sed -e "s/\"//g" > tmp-url-$RANDOM_STRING.txt
+rm -f asrOutput.json*; wget -q -i tmp-url-$RANDOM_STRING.txt
 mv -f asrOutput.json* "$OUTPUT_NAME".json
-rm -f tmp.json tmp-url.txt
+rm -f tmp-$RANDOM_STRING.json tmp-url-$RANDOM_STRING.txt
 
 
-python3 "$TRANSCRIBE_DIR"/lib/extraction.py "$OUTPUT_NAME".json
-sed -e "s/\[{'transcript'://" -e "s/\}\]//" tmp-asr-output.txt > tmp-asr-output.txte
+python3 "$TRANSCRIBE_DIR"/lib/extraction.py "$OUTPUT_NAME".json tmp-asr-output-$RANDOM_STRING.txt
+sed -e "s/\[{'transcript'://" -e "s/\}\]//" tmp-asr-output-$RANDOM_STRING.txt > tmp-asr-output-$RANDOM_STRING.txte
 if [ "$LANGUAGE_CODE" == "ja-JP" -o "$LANGUAGE_CODE" == "zh-CN" ]; then
-	sed -e "s/。/。\n\n/g" tmp-asr-output.txte > "$OUTPUT_NAME".txt
+	sed -e "s/。/。\n\n/g" tmp-asr-output-$RANDOM_STRING.txte > "$OUTPUT_NAME".txt
 else
-	sed -e "s/\.\ /\.\n\n/g" tmp-asr-output.txte > "$OUTPUT_NAME".txt
+	sed -e "s/\.\ /\.\n\n/g" tmp-asr-output-$RANDOM_STRING.txte > "$OUTPUT_NAME".txt
 fi
-rm -f tmp-asr-output.txt*
+rm -f tmp-asr-output-$RANDOM_STRING.txt*
 
 
-aws transcribe delete-transcription-job --transcription-job-name test-job001
-aws s3api delete-object --bucket "$BUCKET_NAME" --key transcripts-tmp.mp4
+aws transcribe delete-transcription-job --transcription-job-name test-job-$RANDOM_STRING
+aws s3api delete-object --bucket "$BUCKET_NAME" --key transcripts-tmp-$RANDOM_STRING.mp4
 aws s3 rb s3://"$BUCKET_NAME"
 

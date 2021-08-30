@@ -1,4 +1,6 @@
 #!/bin/bash
+# Usage: format.sh TXT_FILE
+
 
 INPUT_TXT="$1"
 

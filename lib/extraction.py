@@ -19,10 +19,11 @@ import os
 import sys
 
 json_file = sys.argv[1]
+output_txt_file = sys.argv[2]
 
 with open(json_file, 'r') as f:
         json_load = json.load(f)
 
-with open('tmp-asr-output.txt', 'w') as f:
+with open(output_txt_file, 'w') as f:
         print(json_load["results"]["transcripts"], file=f)
 
