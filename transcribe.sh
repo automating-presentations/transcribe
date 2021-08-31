@@ -133,29 +133,34 @@ do
 	aws transcribe list-transcription-jobs --region "$REGION" |grep COMPLETED > completed-flag-check-$RS.txt
 	if [ -s completed-flag-check-$RS.txt ]; then
 		echo "Transcribing completed!"
-		rm -f completed-flag-check-$RS.txt test-start-command-$RS.json
+		rm -f test-start-command-$RS.json
 		break
 	fi
 done
 
 
-aws transcribe get-transcription-job --transcription-job-name test-job-$RS 1> tmp-$RS.json
-sed -e "s/FileUri\":\ /FileUri\":\ \n/" tmp-$RS.json |grep https |sed -e "s/\"//g" > tmp-url-$RS.txt
-rm -f asrOutput.json*; wget -q -i tmp-url-$RS.txt
-mv -f asrOutput.json* "$OUTPUT_NAME".json
-rm -f tmp-$RS.json tmp-url-$RS.txt
+if [ -s completed-flag-check-$RS.txt ]; then
+
+	aws transcribe get-transcription-job --transcription-job-name test-job-$RS 1> tmp-$RS.json
+	sed -e "s/FileUri\":\ /FileUri\":\ \n/" tmp-$RS.json |grep https |sed -e "s/\"//g" > tmp-url-$RS.txt
+	rm -f asrOutput.json*; wget -q -i tmp-url-$RS.txt
+	mv -f asrOutput.json* "$OUTPUT_NAME".json
+	rm -f tmp-$RS.json tmp-url-$RS.txt
 
 
-python3 "$TRANSCRIBE_DIR"/lib/extraction.py "$OUTPUT_NAME".json tmp-asr-output-$RS.txt
-sed -e "s/\[{'transcript'://" -e "s/\}\]//" tmp-asr-output-$RS.txt > tmp-asr-output-$RS.txte
-if [ "$LANGUAGE_CODE" == "ja-JP" -o "$LANGUAGE_CODE" == "zh-CN" ]; then
-	sed -e "s/。/。\n\n/g" tmp-asr-output-$RS.txte > "$OUTPUT_NAME".txt
-else
-	sed -e "s/\.\ /\.\n\n/g" tmp-asr-output-$RS.txte > "$OUTPUT_NAME".txt
+	python3 "$TRANSCRIBE_DIR"/lib/extraction.py "$OUTPUT_NAME".json tmp-asr-output-$RS.txt
+	sed -e "s/\[{'transcript'://" -e "s/\}\]//" tmp-asr-output-$RS.txt > tmp-asr-output-$RS.txte
+	if [ "$LANGUAGE_CODE" == "ja-JP" -o "$LANGUAGE_CODE" == "zh-CN" ]; then
+		sed -e "s/。/。\n\n/g" tmp-asr-output-$RS.txte > "$OUTPUT_NAME".txt
+	else
+		sed -e "s/\.\ /\.\n\n/g" tmp-asr-output-$RS.txte > "$OUTPUT_NAME".txt
+	fi
+	rm -f tmp-asr-output-$RS.txt*
+
 fi
-rm -f tmp-asr-output-$RS.txt*
 
 
+rm -f completed-flag-check-$RS.txt
 aws transcribe delete-transcription-job --transcription-job-name test-job-$RS
 aws s3api delete-object --bucket "$BUCKET_NAME" --key transcripts-tmp-$RS.mp4
 aws s3 rb s3://"$BUCKET_NAME"
