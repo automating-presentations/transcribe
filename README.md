@@ -20,19 +20,18 @@ brew install awscli ffmpeg
 ## How to use
 
 The following command transcribes Japanese sound or movie file and creates "test-output.{json,txt}".  
-This S3 Bucket, "testid-bucket00001", is created temporarily for the purpose of transcribe, and deleted after transcribe.
 
 ```
 git clone https://github.com/automating-presentations/transcribe
 chmod u+x transcribe/transcribe.sh
-./transcribe/transcribe.sh -i input-ja.mp3 -bucket testid-bucket00001 -o test-output
+./transcribe/transcribe.sh -i input-ja.mp3 -o test-output
 ```
 
 The following command transcribes English sound or movie file and creates "test-output.{json,txt}".  
 Please refer to [here](https://docs.aws.amazon.com/transcribe/latest/dg/API_TranscriptionJobSummary.html) for the language codes that can be specified.
 
 ```
-./transcribe/transcribe.sh -lang en-US -i input-en.mp4 -bucket testid-bucket00001 -o test-output
+./transcribe/transcribe.sh -lang en-US -i input-en.mp4 -o test-output
 ```
 
 ----
