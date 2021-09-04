@@ -152,22 +152,23 @@ if [ -s completed-flag-check-$RS.txt ]; then
 	rm -f tmp-asr-output-$RS.txt*
 
 	EOF=$(wc -l < tmp-output-name-$RS.txt |sed -e 's/\ //g' -e 's/\t//g')
-	cat tmp-output-name-$RS.txt |awk '
-		{
-			if('$EOF' == 1){
-				print substr($0, 3, length($0)-3)
+	if [ $EOF -eq 1 ]; then
+		cat tmp-output-name-$RS.txt |awk '{print substr($0, 3, length($0)-3)}' > "$OUTPUT_NAME".txt
+	else
+		cat tmp-output-name-$RS.txt |awk '
+			{
+				if(NR == 1){
+					print substr($0, 3)
+				}
+				else if(NR == '$EOF'){
+					print substr($0, 1, length($0)-1)
+				}
+				else{
+					print $0
+				}
 			}
-			else if(NR == 1){
-				print substr($0, 3)
-			}
-			else if(NR == '$EOF'){
-				print substr($0, 1, length($0)-1)
-			}
-			else{
-				print $0
-			}
-		}
-	'  > "$OUTPUT_NAME".txt
+		'  > "$OUTPUT_NAME".txt
+	fi
 	rm -f tmp-output-name-$RS.txt
 
 fi
