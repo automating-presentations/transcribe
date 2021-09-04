@@ -145,11 +145,27 @@ if [ -s completed-flag-check-$RS.txt ]; then
 	python3 "$TRANSCRIBE_DIR"/lib/extraction.py "$OUTPUT_NAME".json tmp-asr-output-$RS.txt
 	sed -e "s/\[{'transcript'://" -e "s/\}\]//" tmp-asr-output-$RS.txt > tmp-asr-output-$RS.txte
 	if [ "$LANGUAGE_CODE" == "ja-JP" -o "$LANGUAGE_CODE" == "zh-CN" ]; then
-		sed -e "s/。/。\n\n/g" tmp-asr-output-$RS.txte > "$OUTPUT_NAME".txt
+		sed -e "s/。/。\n\n/g" tmp-asr-output-$RS.txte > tmp-"$OUTPUT_NAME"-$RS.txt
 	else
-		sed -e "s/\.\ /\.\n\n/g" tmp-asr-output-$RS.txte > "$OUTPUT_NAME".txt
+		sed -e "s/\.\ /\.\n\n/g" tmp-asr-output-$RS.txte > tmp-"$OUTPUT_NAME"-$RS.txt
 	fi
 	rm -f tmp-asr-output-$RS.txt*
+
+	EOF=$(wc -l < tmp-"$OUTPUT_NAME"-$RS.txt |sed -e 's/\ //g' -e 's/\t//g')
+	cat tmp-"$OUTPUT_NAME"-$RS.txt | awk '
+		{
+			if(NR == 1){
+				print substr($0, 3)
+			}
+			else if(NR == '$EOF'){
+				print substr($0, 1, length($0)-1)
+			}
+			else{
+				print $0
+			}
+		}
+	'  > "$OUTPUT_NAME".txt
+	rm -f tmp-"$OUTPUT_NAME"-$RS.txt
 
 fi
 
