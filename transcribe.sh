@@ -152,7 +152,7 @@ if [ -s completed-flag-check-$RS.txt ]; then
 	rm -f tmp-asr-output-$RS.txt*
 
 	EOF=$(wc -l < tmp-"$OUTPUT_NAME"-$RS.txt |sed -e 's/\ //g' -e 's/\t//g')
-	cat tmp-"$OUTPUT_NAME"-$RS.txt | awk '
+	cat tmp-"$OUTPUT_NAME"-$RS.txt |awk '
 		{
 			if(NR == 1){
 				print substr($0, 3)
